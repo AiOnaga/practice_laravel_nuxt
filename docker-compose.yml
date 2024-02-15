@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    container_name: sample_project_app
+    volumes:
+      - type: volume
+        source: php-fpm-socket
+        target: /var/run/php-fpm
+        volume:
+          nocopy: true
+      - type: bind
+        source: ./backend
+        target: /work/backend
+      - type: volume
+        source: psysh-store
+        target: /root/.config/psysh
+        volume:
+          nocopy: true
+
+  web:
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    container_name: sample_project_nginx
+    ports:
+      - 80:80
+      - "9000:9000"
+    volumes:
+      - type: volume
+        source: php-fpm-socket
+        target: /var/run/php-fpm
+        volume:
+          nocopy: true
+      - type: bind
+        source: ./backend
+        target: /work/backend
+  db-mysql:
+    image: mysql:8.0
+    # # container_name: sample_project_db
+    volumes:
+      - "./docker/db/storage/:/var/lib/mysql"
+      - "./docker/mysql/initdb/:/docker-entrypoint-initdb.d"
+    # volumes:  
+      # - "mysql-practice-volume:/var/lib/mysql"
+    #   - ./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf
+    #   # - ./docker/db/sql:/docker-entrypoint-initdb.d
+    environment: 
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: practice
+      MYSQL_USER: sample
+      MYSQL_PASSWORD: sample
+      TZ: 'Asia/Tokyo' 
+    # # command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - 3307:3306
+
+  front:
+    build:
+      context: .
+      dockerfile: ./docker/front/Dockerfile
+    container_name: sample_project_front
+    volumes:
+      - ./frontend:/var/www/nuxt
+    ports:
+      - "3000:3000"
+      - "24678:24678"
+    tty: true
+
+volumes:
+  php-fpm-socket:
+  psysh-store:
+  mysql-practice-volume:
